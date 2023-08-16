@@ -1,0 +1,123 @@
+{%extends 'layout.html'%}
+
+{%block title%} Usuarios - MiniBlog {%endblock%}
+
+{%block main%}
+
+<br>
+<!-- Acordeón Crear Usuario -->
+<div class="cointainer text-center">
+    <button class="btn btn-success mb-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
+        aria-expanded="false" aria-controls="collapseExample">
+        Crear usuario
+    </button>
+
+    <div class="collapse" id="collapseExample">
+        <div class="card card-body">
+            <form action="/add_user" method="post" class="mb-3 d-flex justify-content-end flex-wrap">
+                <label for="name"></label>
+                <input class="form-control w-100" type="text" name="name" id="" placeholder="Nombre de usuario">
+                <label for="email"></label>
+                <input class="form-control w-100" type="email" name="email" id="" placeholder="correo@correo.com">
+                <label for="password"></label>
+                <input class="form-control w-100" type="password" name="password" id="" placeholder="contraseña">
+                <label for="image" class="form-label"></label>
+                <select id="" name="image" placeholder="Elige imagen de perfil">
+                    <option value="1">Sin imagen</option>
+                    <option value="2">Gato</option>
+                    <option value="3">Perro</option>
+                    <option value="4">Michael Jackson</option>
+                    <option value="5">Portal Cake</option>
+                    <option value="6">Pink Floyd</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Crear usuario</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Termina acordeón Creación user -->
+<br>
+
+<!-- empieza crud Usuarios -->
+<div class="table-responsive container text-center">
+    <h2>Usuarios</h2>
+    <table class="table table-primary">
+        <thead>
+            <tr>
+                <th scope="col">Imagen </th>
+                <th scope="col">Nombre </th>
+                <th scope="col">Posteos</th>
+                <th scope="col">Borrar? </th>
+                <th scope="col">Elegir </th>
+            </tr>
+        </thead>
+        <tbody>
+            {%for user in users%}
+            <tr class="">
+                <td scope="row"><img src="../static/img/{{user.image}}.jpg" alt="foto de perfil" class="rounded-circle"
+                        style="height: 50px; width: 50px;"></td>
+                <td scope="row">{{user.name}}</td>
+                <td scope="row"><a name="" id="" class="btn btn-primary" href="/filter/user/{{user.id}}/guest"
+                        role="button">Ver sus Posts como Invitado</a></td>
+                <td scope="row"><button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#Modalborrar{{user.id}}"> Borrar usuario
+                    </button></td>
+                <td scope="row"><button type="button" class="btn btn-success" data-bs-toggle="modal"
+                        data-bs-target="#Modal{{user.id}}"> ¡Entrar!
+                    </button></td>
+            </tr>
+            <!-- EMPIEZA MODAL BORRAR USER -->
+            <div class="modal fade" id="Modalborrar{{user.id}}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Borrar la cuenta de {{user.name}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>¿Estás seguro que quieres borrar la cuenta de {{user.name}}? Se eliminarán sus posteos y
+                                sus comentarios. Esta acción no se puede deshacer.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <a href="/delete_user/{{user.id}}" class="btn btn-danger">Borrar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMPIEZA MODAL DE VALIDACION DE USER -->
+            <div class="modal fade" id="Modal{{user.id}}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Ingrese contraseña de {{user.name}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+
+                            <form action="/{{user.id}}">
+                                <div class="mb-3">
+                                    <label for="title" class="col-form-label">Contraseña:</label>
+                                    <input type="password" class="form-control" name="title"></input>
+                                </div>
+                            </form>
+                            <small>PISTA: no hay validación de contraseña. Podés ingresar cualquier cosa.</small>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <a href="/{{user.id}}" class="btn btn-success">Entrar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- FIN MODALES -->
+            {%endfor%}
+        </tbody>
+    </table>
+</div>
+
+{%endblock%}

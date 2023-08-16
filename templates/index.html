@@ -1,0 +1,289 @@
+{%extends 'layout.html'%}
+
+{%block title%} Muro - MiniBlog {%endblock%}
+
+{%block main%}
+<!-- Add Post section -->
+<div class="container mx-auto text-center mt-3">
+  {%if logged_user != 'guest'%}
+  <h3>¡Bienvenido, {{logged_user.name}}!</h3>
+  <h4>Agrega una publicación:</h4>
+
+  <form action="/add_post/{{logged_user.id}}" method="post" class="mb-3 d-flex justify-content-end flex-wrap">
+    <label for="title"></label>
+    <input class="form-control w-100" type="text" name="title" id="" placeholder="¡¡Título!!">
+    <label for="content"></label>
+    <input class="form-control w-100" type="text" name="content" id="" placeholder="¿¡Qué estás pensando!?">
+
+    <label for="category" class="form-label"></label>
+    <select id="" name="category" placeholder="Elige categoría">
+      {%for category in categories%}
+      <option value="{{category.id}}">{{category.name}}</option>
+      {%endfor%}
+    </select>
+    <button type="submit" class="btn btn-primary">Agregar Posteo</button>
+    <img src="../static/img/{{logged_user.image}}.jpg" alt="{{logged_user.name}}" class="rounded-circle"
+      style="height: 40px; width: 40px;">
+  </form>
+  {%else%}
+  <h1>Bienvenido al MiniBlog.</h1>
+  <h3>Ahora mismo estás en modo invitado.</h3>
+  <h5 class="mb-5">Para postear y comentar <a href="/users">Crea o elige un usuario</a>.</h5>
+  {%endif%}
+</div>
+
+<!-- termina add post -->
+<!--empieza Post Main  -->
+
+{%if posts|count > 0%}
+{%for post in posts%}
+
+<div class=" my-1 mx-5 row border">
+  <!-- user data -->
+  <div class="col-12 col-sm-3 text-center">
+    {%if logged_user != 'guest'%}
+    <p class="m-0"><a href="/filter/user/{{post.user.id}}/{{logged_user.id}}">{{post.user.name}}</a> dice:</p>
+    {%else%}
+    <p class="m-0"><a href="/filter/user/{{post.user.id}}/guest">{{post.user.name}}</a> dice:</p>
+    {%endif%}
+    <img class="container rounded-circle  w-auto" style="height: 100px;" src="../static/img/{{post.user.image}}.jpg"
+      alt="foto de {{post.user.name}}">
+  </div>
+  <!-- post content -->
+  <div class="col-12 col-sm-9">
+    <div class="d-flex flex-wrap">
+
+      <h4 class="flex-grow-1">{{post.title}}</h4>
+      {%if logged_user != 'guest'%}
+      <a href="/filter/category/{{post.category.id}}/{{logged_user.id}}">{{post.category.name}}</a>
+      {%else%}
+      <a href="/filter/category/{{post.category.id}}/guest">{{post.category.name}}</a>
+      {%endif%}
+      <p> | {{post.time_created}}</p>
+      {%if post.time_updated %}
+      <p>| <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil"
+          viewBox="0 0 16 16">
+          <path
+            d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+        </svg> {{post.time_updated}}</p>
+      {%endif%}
+    </div>
+    <hr class="my-1">
+    <p class=" text-break">{{post.content}} </p>
+
+    {%if logged_user != 'guest' and logged_user.id == post.user.id%}
+    <!-- BOTONES para el user -->
+    <div class="d-flex justify-content-end mb-1">
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#Modal{{post.id}}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil"
+            viewBox="0 0 16 16">
+            <path
+              d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+          </svg>
+        </button>
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#Modalborrarpost{{post.id}}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash"
+            viewBox="0 0 16 16">
+            <path
+              d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z" />
+            <path
+              d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- FIN BOTONES -->
+    <!-- EMPIEZA MODAL BORRAR DE POST -->
+    <div class="modal fade" id="Modalborrarpost{{post.id}}" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Borrar Posteo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>¿De verdad quieres borrar el posteo? También borrará todos los comentarios del post. Esta acción no se
+              puede deshacer.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <a href="/delete_post/{{post.id}}/{{logged_user.id}}" class="btn btn-danger">Borrar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- EMPIEZA MODAL DE EDICIÓN DEL POST -->
+    <div class="modal fade" id="Modal{{post.id}}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar posteo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="/edit_post/{{post.id}}/{{logged_user.id}}" method="post">
+              <div class="mb-3">
+                <label for="title" class="col-form-label">Título</label>
+                <input type="text" class="form-control" name="title" value="{{post.title}}"></input>
+              </div>
+              <div class="mb-3">
+                <label for="content" class="col-form-label">Contenido</label>
+                <textarea class="form-control" name="content">{{post.content}}</textarea>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="sumbit" class="btn btn-success">Editar</button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- FIN MODALES POST -->
+
+    {%endif%}
+    <!-- termina post content -->
+
+    <!-- Empieza COMENTARIOS del post-->
+    <div class="accordion accordion-flush" id="accordionFlushExample">
+      <!-- Botón acordeón -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="flush-headingOne">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#collapse{{post.id}}" aria-expanded="false" aria-controls="collapse{{post.id}}">
+            Ver Comentarios
+          </button>
+        </h2>
+        <div id="collapse{{post.id}}" class="accordion-collapse collapse" aria-labelledby="flush-headingOne"
+          data-bs-parent="#accordionFlushExample">
+          <div class="accordion-body row">
+            <!-- empiezan comentarios -->
+
+            {%for comment in comments if comment.post.id == post.id%}
+
+            <div class="col-12 col-sm-2 text-center border-end">
+              <p class="m-0">{{comment.user.name}} dice:</p>
+              <img class="rounded-circle mx-3 w-auto" style="height: 50px;"
+                src="../static/img/{{comment.user.image}}.jpg" alt="foto de {{comment.user.name}}">
+            </div>
+            <div class="col-12 col-sm-10">
+              <small class="border-bottom">{{comment.time_created}}
+                {%if comment.time_updated%}
+                |<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil"
+                  viewBox="0 0 16 16">
+                  <path
+                    d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+                </svg> {{comment.time_updated}}
+                {%endif%}
+              </small>
+
+              <p class="col-12 col-sm-10">{{comment.content}}</p>
+            </div>
+            <!-- Condicional Para editar/borrar -->
+            {%if logged_user != 'guest' and logged_user.id == comment.user.id%}
+
+            <!-- BOTONES -->
+            <div class="d-flex justify-content-end mb-1">
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                  data-bs-target="#ModalCom{{comment.id}}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    class="bi bi-pencil" viewBox="0 0 16 16">
+                    <path
+                      d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+                  </svg>
+                </button>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+                  data-bs-target="#Modalborrarcom{{comment.id}}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash"
+                    viewBox="0 0 16 16">
+                    <path
+                      d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z" />
+                    <path
+                      d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- FIN BOTONES -->
+            <!-- EMPIEZA MODAL BORRAR COMMENT -->
+            <div class="modal fade" id="Modalborrarcom{{comment.id}}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Borrar Comentario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>¿De verdad quieres borrar el comentario? Esta acción no se puede deshacer.</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <a href="/delete_comment/{{comment.id}}/{{logged_user.id}}" class="btn btn-danger">Borrar</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- EMPIEZA MODAL DE EDICIÓN DEL COMMENT -->
+            <div class="modal fade" id="ModalCom{{comment.id}}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Editar Comentario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form action="/edit_comment/{{comment.id}}/{{logged_user.id}}" method="post">
+
+                      <div class="mb-3">
+                        <label for="content" class="col-form-label">Contenido</label>
+                        <textarea class="form-control" name="content">{{comment.content}}</textarea>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="sumbit" class="btn btn-success">Editar</button>
+                      </div>
+                    </form>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <!-- FIN MODALES COMMENT -->
+
+            {%endif%}
+            <hr class="m-0">
+            {%else%}
+            <div class="container text-center">
+              <p>Parece que aún no hay comentarios.</p>
+            </div>
+            {%endfor%}
+            {%if logged_user != 'guest'%}
+            <form action="/add_comment/{{post.id}}/{{logged_user.id}}" method="post" class="my-2 d-flex ">
+              <img src="../static/img/{{logged_user.image}}.jpg" alt="foto de {{logged_user.name}}"
+                class="rounded-circle" style="height: 50px; width: 50px;">
+              <label for="content"></label>
+              <input class="form-control" type="text" name="content" id="" placeholder="¡¿Qué opinas?!">
+              <button class="btn btn-primary" type="sumbit"> Comentar</button>
+            </form>
+            {%endif%}
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Termina Comentarios -->
+  </div>
+  <!--Termina Post Main  -->
+</div>
+<br>
+{%endfor%}
+{%else%}
+<!-- Si no  hay posteos.. -->
+<div class="container my-3 text-center border-top">
+  <h1>Parece que aún no hay posteos...</h1>
+</div>
+{%endif%}
+
+{%endblock%}
