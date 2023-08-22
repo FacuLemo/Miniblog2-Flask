@@ -52,7 +52,7 @@ class User(db.Model):
     image = db.Column(db.Integer, nullable=False, default=1)
     posts = db.relationship("Post", backref="user", cascade="all,delete")
     comments = db.relationship("Comment", backref="user",
-                               cascade="all,delete")
+                                cascade="all,delete")
 
     def __str__(self):
         return f"-User data: {self.nombre}, {self.email}."
@@ -117,22 +117,35 @@ def inject_context():
 
 @app.route("/")
 def RedirectGuest():
-    return redirect(url_for("Index", user_id="guest"))
+    return redirect(url_for("GuestIndexView"))
 
-#@app.route("/logged/<user_id>")
-def LoggedUser():
-    #current_user= get_jwt_identity() -> trae el nombre dado como parametro en el token
-    #get_info=get_jwt() -> trae el dict q pones en el token de acceso
-    #if get_info ['user_type']==1:
-    #    return
-    #else:
-    pass
+@app.route("/guest")
+def GuestIndexView():
+    return render_template(
+        "index.html",
+        posts=db.session.query(Post).order_by(Post.id.desc()).all(),
+        logged_user='guest',
+        comments=db.session.query(Comment).all(),
+    )
+
+@app.route("/logged")
+@jwt_required()
+def LoggedIndexView(key):
+    uid= get_jwt_identity() # trae lo que le diste como parametro en el token
+    current_user=User.query.get(uid)
+    render_template(
+        "index.html",
+        posts=db.session.query(Post).order_by(Post.id.desc()).all(),
+        logged_user=current_user,
+        comments=db.session.query(Comment).all())
+
+
+#Al borrar la siguiente ruta recordar hacer
+#ctrl f y volver a referenciar los index.
 
 @app.route("/<user_id>")
-#@jwt_required() para restringir la entrada si no hay token
 def Index(user_id):
     logged_user = get_logged_user(user_id)
-#    current_user = get_jwt_identity()
     return render_template(
         "index.html",
         posts=db.session.query(Post).order_by(Post.id.desc()).all(),
@@ -140,6 +153,10 @@ def Index(user_id):
         comments=db.session.query(Comment).all(),
     )
 
+#PARA EL FILTER:
+#crear ruta: 'filter/ftype/tid/guest
+#y otra ruta: 'filter/ftype/tid/logged'
+#la última estando JWT_required.
 
 @app.route("/filter/<ftype>/<tid>/<u_id>")
 # fTYPE: filter type (user/categ).
@@ -183,6 +200,37 @@ def ViewCategories():
 def ViewUsers():
     return render_template("users.html")
 
+@app.route("/login/<uid>", methods=["POST"])
+def Login(uid):
+    if request.method == "POST":
+        user=User.query.get(uid)
+        passw = request.form["passw"]
+        if user and check_password_hash(user.password, passw):
+            access_token = create_access_token(
+                identity=user.id,
+                expires_delta=timedelta(minutes=30)
+                #additional_claims={'user_type':1} -> no es necesario
+            )
+            return redirect(url_for("LoggedIndexView")), access_token
+        return redirect(url_for("GuestIndexView")) #o 401
+
+#login que pida los datos y des-hashee la pass para ver si coincide con el input
+# if user and check_password_hash(user.password, password) -> Devuelve true o false
+#   access_token = create_access_token(
+#                                       identity=username
+#                                       expires_delta=timedelta(minutes=30)   #datetime.now()+tmdelta                                 
+#                                       additional_claims={
+#                                                   'user_id':uid
+#                                        }                                      
+#                                      )
+#   return access_token
+#return "no se genero token"
+
+    #get_info=get_jwt() -> trae el dict q pones en el token de acceso
+    #if get_info ['user_type']==1:
+    #    return algo admin
+#en el access token hay datos como el nombre de usuario, fecha, etc.
+
 
 @app.route("/add_category", methods=["POST"])
 def Addcategory():
@@ -202,9 +250,9 @@ def AddUser():
         passw = request.form["password"]
         img = request.form["image"]
         hashed_pass=generate_password_hash(passw,
-                                           method='pbkdf2',
-                                           salt_length=8
-                                           )
+                                        method='pbkdf2',
+                                        salt_length=8,
+                                        )
         new_user = User(name=name, email=email,
                         password=hashed_pass, image=img
                         )
@@ -212,24 +260,6 @@ def AddUser():
         db.session.commit()
         return redirect(url_for("ViewUsers"))
 
-#login que pida los datos y des-hashee la pass para ver si coincide con el input
-# if user and check_password_hash(user.password, password) -> Devuelve true o false
-#   access_token = create_access_token(
-#                                       identity=username
-#                                       expires_delta=timedelta(minutes=30)   #datetime.now()+tmdelta                                 
-#                                       additional_claims={
-#                                                   'user_type':1
-#                                                    'dato_util':'util'
-#                                        }                                      
-#                                      )
-#   return access_token
-#return "no se genero token"
-
-#en el access token hay datos como el nombre de usuario, fecha, etc.
-
-#CON EL access_token PODEMOS ENTRAR EN PÁGINAS @jwt_required
-#tendría que crear un /logged/<uid> con @jwt_required
-#y dejar el '/' exclusivo para el guest
 
 @app.route("/add_post/<uid>", methods=["POST"])
 def AddPost(uid):
@@ -253,9 +283,9 @@ def AddComment(post_id, uid):
         post = post_id
 
         new_comment = Comment(content=content, 
-                              user_id=uid,
-                              post_id=post,
-                              )
+                            user_id=uid,
+                            post_id=post,
+                            )
         db.session.add(new_comment)
         db.session.commit()
 
@@ -320,6 +350,6 @@ def deleteCategory(id):
     db.session.commit()
     return redirect(url_for("ViewCategories"))
 
-#@jwt.invalid_token_loader
-#def Unauth(reason):
-#    return f'denegado por {reason}'
+@jwt.invalid_token_loader
+def Unauth(reason):
+    return f'denegado por {reason}'

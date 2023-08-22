@@ -98,19 +98,20 @@
                         </div>
                         <div class="modal-body">
 
-                            <form action="/{{user.id}}">
+                            <form action="/login/{{user.id}}" method="post">
                                 <div class="mb-3">
-                                    <label for="title" class="col-form-label">Contraseña:</label>
-                                    <input type="password" class="form-control" name="title"></input>
+                                    <label for="passw" class="col-form-label">Contraseña:</label>
+                                    <input type="password" class="form-control" name="passw"></input>
+                                </div>
+                                <small>PISTA: no hay validación de contraseña. Podés ingresar cualquier cosa.</small>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="submit" class="btn btn-primary">Entrar!</button>
                                 </div>
                             </form>
-                            <small>PISTA: no hay validación de contraseña. Podés ingresar cualquier cosa.</small>
-
+                            
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <a href="/{{user.id}}" class="btn btn-success">Entrar</a>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
