@@ -2,3 +2,5 @@
 venv/
 migrations/
 __pycache__/
+.data
+.env
