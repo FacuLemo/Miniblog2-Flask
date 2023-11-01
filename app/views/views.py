@@ -1,5 +1,5 @@
 from datetime import timedelta
-from app import app, db, jwt
+from app import app, db
 
 from flask import (
     jsonify,
@@ -8,6 +8,7 @@ from flask import (
     request,
     url_for,
 )
+from flask.views import MethodView
 from app.models.models import (
     Category,
     Post,
@@ -16,17 +17,16 @@ from app.models.models import (
 )
 from app.schemas.schemas import (
     UserBasicSchema,
+    UserFullSchema,
 )
-
-
-
+#Funciones de uso común:
 def get_logged_user(uid):
     if uid == "guest":
         return "guest"
     else:
         return User.query.get(uid)
 
-
+#Context Processor:
 @app.context_processor
 def inject_context():
     users = db.session.query(User).all()
@@ -38,7 +38,73 @@ def inject_context():
         db.session.commit()
     return dict(users=users, categories=categ)
 
+#sección de la API, construida con MethodViews
+class UserAPI(MethodView):
+    def get(self, user_id=None):
+        if user_id is None: #Si no hay parametro da vista general.
+            users= User.query.all()
+            resultado = UserBasicSchema().dump(users,many=True)
+        else:   #Si se le manda el id del user muestra toda la info.
+            users= User.query.get(user_id)
+            resultado= UserFullSchema().dump(users)
+        return jsonify(resultado)
+        
+    def post(self):
+        user_json = UserFullSchema().load(request.json)
+        name= user_json.get('name')
+        email= user_json.get('email')
+        password= user_json.get('password')
+        image= user_json.get('image')
+        try:
+            if int(image) > 6: #Esto debería ser una variable global...
+                return jsonify(Error="imagen inexistente. No se registró el user.")
+            new_user = User(name=name, email=email,
+                            password=password, image=image
+                            )
+            db.session.add(new_user)
+            db.session.commit()
+            return jsonify(UserFullSchema().dump(new_user))
+        except ValueError as err:
+           return jsonify(Error=err), 404
 
+    def put(self,user_id): #Cambiar contraseña y foto
+        try:
+            user_put= User.query.get(user_id)
+            user_json = UserFullSchema().load(request.json)
+            passw= user_json.get('password')
+            new_image= user_json.get('image')
+            if int(new_image) > 6: #Esto debería ser una variable global...
+                return jsonify(Error="Cargando imagen inexistente")
+            user_put.password= passw
+            user_put.image=new_image
+            
+            db.session.commit()
+            return jsonify(UserBasicSchema().dump(user_put))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+    
+    def delete(self,user_id):
+        try:
+            usr = User.query.get(user_id)
+            db.session.delete(usr)
+            db.session.commit()
+            return jsonify(mensaje=f"Borraste el user {id}")
+        except ValueError as err:
+           return jsonify(Error=err), 404
+        
+
+app.add_url_rule("/api/user",view_func=UserAPI.as_view('user'))
+app.add_url_rule("/api/user/<user_id>", view_func=UserAPI.as_view('user_by_id'))
+
+#/api
+#   def delete(self,Xid)
+#       try:
+#            blabla
+#       except ValueError as err:
+#           return jsonify(Error=err), 404
+
+
+#Sección de enrutado con frontend, escencialmente lo mismo que en el miniblog1.
 @app.route("/")
 def RedirectGuest():
     return redirect(url_for("GuestIndexView"))
@@ -53,14 +119,15 @@ def GuestIndexView():
     )
 
 @app.route("/logged")
-@jwt_required()
-def LoggedIndexView(key):
-    uid= get_jwt_identity() # trae lo que le diste como parametro en el token
-    current_user=User.query.get(uid)
+#@jwt_required()
+def LoggedIndexView(user_id):
+    #uid= get_jwt_identity() # trae lo que le diste como parametro en el token
+    #current_user=User.query.get(uid)
+    logged_user= get_logged_user(user_id)
     render_template(
         "index.html",
         posts=db.session.query(Post).order_by(Post.id.desc()).all(),
-        logged_user=current_user,
+        logged_user=logged_user,
         comments=db.session.query(Comment).all())
 
 
@@ -127,7 +194,8 @@ def ViewUsers():
 @app.route("/login/<uid>", methods=["POST"])
 def Login(uid):
     if request.method == "POST":
-        user=User.query.get(uid)
+        return redirect(url_for("LoggedIndexView"))
+        """user=User.query.get(uid)
         passw = request.form["passw"]
         if user and check_password_hash(user.password, passw):
             access_token = create_access_token(
@@ -136,7 +204,7 @@ def Login(uid):
                 #additional_claims={'user_type':1} -> no es necesario
             )
             return redirect(url_for("LoggedIndexView")), access_token
-        return redirect(url_for("GuestIndexView")) #o 401
+        return redirect(url_for("GuestIndexView")) #o 401"""
 
 #login que pida los datos y des-hashee la pass para ver si coincide con el input
 # if user and check_password_hash(user.password, password) -> Devuelve true o false
@@ -173,12 +241,14 @@ def AddUser():
         email = request.form["email"]
         passw = request.form["password"]
         img = request.form["image"]
-        hashed_pass=generate_password_hash(passw,
-                                        method='pbkdf2',
-                                        salt_length=8,
-                                        )
+        #hashed_pass=generate_password_hash(passw, BORRAR
+        #                                method='pbkdf2',
+        #                                salt_length=8,
+        #                                )
+
         new_user = User(name=name, email=email,
-                        password=hashed_pass, image=img
+                        password=passw, image=img 
+                        #CAMBIÉ el password=hashed_pass por 'passw'
                         )
         db.session.add(new_user)
         db.session.commit()
@@ -274,6 +344,6 @@ def deleteCategory(id):
     db.session.commit()
     return redirect(url_for("ViewCategories"))
 
-@jwt.invalid_token_loader
-def Unauth(reason):
-    return f'denegado por {reason}'
+#@jwt.invalid_token_loader
+#def Unauth(reason):
+#    return f'denegado por {reason}'

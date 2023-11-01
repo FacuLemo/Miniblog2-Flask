@@ -349,7 +349,7 @@ def deleteCategory(id):
     db.session.delete(cat)
     db.session.commit()
     return redirect(url_for("ViewCategories"))
-
+"""
 @jwt.invalid_token_loader
 def Unauth(reason):
-    return f'denegado por {reason}'
+    return f'denegado por {reason}'"""

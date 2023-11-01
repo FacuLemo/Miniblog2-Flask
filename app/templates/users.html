@@ -56,7 +56,7 @@
         <tbody>
             {%for user in users%}
             <tr class="">
-                <td scope="row"><img src="../static/img/{{user.image}}.jpg" alt="foto de perfil" class="rounded-circle"
+                <td scope="row"><img src="../../static/img/{{user.image}}.jpg" alt="foto de perfil" class="rounded-circle"
                         style="height: 50px; width: 50px;"></td>
                 <td scope="row">{{user.name}}</td>
                 <td scope="row"><a name="" id="" class="btn btn-primary" href="/filter/user/{{user.id}}/guest"
@@ -98,7 +98,7 @@
                         </div>
                         <div class="modal-body">
 
-                            <form action="/login/{{user.id}}" method="post">
+                            <form action="/{{user.id}}"> <!--method=get para llevar el parametro-->
                                 <div class="mb-3">
                                     <label for="passw" class="col-form-label">Contraseña:</label>
                                     <input type="password" class="form-control" name="passw"></input>
