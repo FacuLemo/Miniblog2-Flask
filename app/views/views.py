@@ -18,6 +18,10 @@ from app.models.models import (
 from app.schemas.schemas import (
     UserBasicSchema,
     UserFullSchema,
+    CategoryFullSchema,
+    CategoryNestedSchema,
+    PostFullSchema,
+    PostNestedSchema,
 )
 #Funciones de uso común:
 def get_logged_user(uid):
@@ -26,19 +30,10 @@ def get_logged_user(uid):
     else:
         return User.query.get(uid)
 
-#Context Processor:
-@app.context_processor
-def inject_context():
-    users = db.session.query(User).all()
-    categ = db.session.query(Category).all()
-    category1 = db.session.query(Category).first()
-    if category1 == None:
-        category_default = Category(name="Misceláneo")
-        db.session.add(category_default)
-        db.session.commit()
-    return dict(users=users, categories=categ)
 
 #sección de la API, construida con MethodViews
+
+#User API
 class UserAPI(MethodView):
     def get(self, user_id=None):
         if user_id is None: #Si no hay parametro da vista general.
@@ -47,6 +42,172 @@ class UserAPI(MethodView):
         else:   #Si se le manda el id del user muestra toda la info.
             users= User.query.get(user_id)
             resultado= UserFullSchema().dump(users)
+        return jsonify(resultado)
+        
+    def post(self):
+        user_json = UserFullSchema().load(request.json)
+        name= user_json.get('name')
+        email= user_json.get('email')
+        password= user_json.get('password')
+        image= user_json.get('image')
+        try:
+            if int(image) > 6: #Esto debería ser una variable global...
+                #Sólo se pueden elegir entre 6 fotos de perfil.
+                return jsonify(Error="imagen inexistente. No se registró el user.")
+            new_user = User(name=name, email=email,
+                            password=password, image=image
+                            )
+            db.session.add(new_user)
+            db.session.commit()
+            return jsonify(UserFullSchema().dump(new_user))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+
+    def put(self,user_id): #Cambiar contraseña y foto
+        try:
+            user_put= User.query.get(user_id)
+            user_json = UserFullSchema().load(request.json)
+            passw= user_json.get('password')
+            new_image= user_json.get('image')
+            if int(new_image) > 6: #Esto debería ser una variable global...
+                #Sólo se pueden elegir entre 6 fotos de perfil.
+                return jsonify(Error="Cambiando a imagen inexistente. Cambios abortados.")
+            user_put.password= passw
+            user_put.image=new_image
+            
+            db.session.commit()
+            return jsonify(UserBasicSchema().dump(user_put))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+    
+    def delete(self,user_id):
+        try:
+            usr = User.query.get(user_id)
+            db.session.delete(usr)
+            db.session.commit()
+            return jsonify(mensaje=f"Borraste el user {usr.name}")
+        except ValueError as err:
+           return jsonify(Error=err), 404
+
+app.add_url_rule("/api/user",view_func=UserAPI.as_view('user'))
+app.add_url_rule("/api/user/<user_id>", 
+                 view_func=UserAPI.as_view('user_by_id'))
+
+#Categories API
+class CategoriesAPI(MethodView):
+    def get(self, category_id=None):
+        if category_id is None: #Si no hay parametro da vista general.
+            categs= Category.query.all()
+            resultado = CategoryFullSchema().dump(categs,many=True)
+        else:   
+            #Si se le pasa el id, obtiene el Schema Nested.
+            categ= Category.query.get(category_id)
+            resultado= CategoryNestedSchema().dump(categ)
+        return jsonify(resultado)
+        
+    def post(self):
+        category_json = CategoryFullSchema().load(request.json)
+        name= category_json.get('name')
+        try:
+            new_category = Category(name=name)
+            db.session.add(new_category)
+            db.session.commit()
+            return jsonify(CategoryFullSchema().dump(new_category))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+
+    def put(self,category_id): #Cambiar nombre de categoría
+        try:
+            categ_put= Category.query.get(category_id)
+            categ_json = CategoryFullSchema().load(request.json)
+            new_name= categ_json.get('name')
+            categ_put.name=new_name
+            db.session.commit()
+            return jsonify(CategoryFullSchema().dump(categ_put))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+    
+    def delete(self,category_id):
+        try:
+            categ = Category.query.get(category_id)
+            db.session.delete(categ)
+            db.session.commit()
+            return jsonify(mensaje=f"Borraste la categoría '{categ.name}', y todos los posts asociados a éste.")
+        except ValueError as err:
+           return jsonify(Error=err), 404
+        
+
+app.add_url_rule("/api/category", view_func=CategoriesAPI.as_view('category'))
+app.add_url_rule("/api/category/<category_id>",
+                  view_func=CategoriesAPI.as_view('category_by_id'))
+
+
+#Post API
+class PostAPI(MethodView):
+    def get(self, post_id=None):
+        if post_id is None: 
+            posts= Post.query.all()
+            resultado = PostFullSchema().dump(posts,many=True)
+        else:  
+            #Si se le pasa el id, obtiene el Schema Nested.
+            posts= Post.query.get(post_id)
+            resultado= PostNestedSchema().dump(posts)
+        return jsonify(resultado)
+        
+    def post(self):
+        #no confundir el método post con las variables, 'posts_json'
+        posts_json = PostFullSchema().load(request.json)
+        title= posts_json.get('title')
+        content= posts_json.get('content')
+        user=posts_json.get('user')
+        time_created= posts_json.get('time_created')
+        try:
+            new_post = Post(title=title, content=content,
+                            time_created=time_created, user=user)
+            db.session.add(new_post)
+            db.session.commit()
+            return jsonify(PostFullSchema().dump(new_post))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+
+    def put(self,post_id): #Cambiar contenido y título
+        try:
+            #no confundir el método post con las variables, 'post_x'
+            post_put= Post.query.get(post_id)
+            post_json = PostFullSchema().load(request.json)
+            title= post_json.get('title')
+            content= post_json.get('content')
+            post_put.title= title
+            post_put.content=content
+            db.session.commit()
+            return jsonify(PostFullSchema().dump(post_put))
+        except ValueError as err:
+           return jsonify(Error=err), 404
+    
+    def delete(self,post_id):
+        try:
+            #no confundir la variable Post
+            post = Post.query.get(post_id)
+            db.session.delete(post)
+            db.session.commit()
+            return jsonify(mensaje=f"Borraste el post '{post.title}', junto a todos sus comentarios")
+        except ValueError as err:
+           return jsonify(Error=err), 404
+        
+
+app.add_url_rule("/api/post",view_func=PostAPI.as_view('post'))
+app.add_url_rule("/api/post/<post_id>", 
+                 view_func=PostAPI.as_view('post_by_id'))
+
+#Comment API #TODO
+class CommentAPI(MethodView):
+    def get(self, post_id=None):
+        if post_id is None: #Si no hay parametro da vista general.
+            comments= User.query.all()
+            resultado = UserBasicSchema().dump(comments,many=True)
+        else:   #Si se le manda el id del user muestra toda la info.
+            comments= User.query.get(post_id)
+            resultado= UserNestedSchema().dump(comments)
         return jsonify(resultado)
         
     def post(self):
@@ -67,9 +228,9 @@ class UserAPI(MethodView):
         except ValueError as err:
            return jsonify(Error=err), 404
 
-    def put(self,user_id): #Cambiar contraseña y foto
+    def put(self,post_id): #Cambiar contraseña y foto
         try:
-            user_put= User.query.get(user_id)
+            user_put= User.query.get(post_id)
             user_json = UserFullSchema().load(request.json)
             passw= user_json.get('password')
             new_image= user_json.get('image')
@@ -83,26 +244,31 @@ class UserAPI(MethodView):
         except ValueError as err:
            return jsonify(Error=err), 404
     
-    def delete(self,user_id):
+    def delete(self,post_id):
         try:
-            usr = User.query.get(user_id)
+            usr = User.query.get(post_id)
             db.session.delete(usr)
             db.session.commit()
             return jsonify(mensaje=f"Borraste el user {id}")
         except ValueError as err:
            return jsonify(Error=err), 404
-        
+#TODO^^^^^     
 
-app.add_url_rule("/api/user",view_func=UserAPI.as_view('user'))
-app.add_url_rule("/api/user/<user_id>", view_func=UserAPI.as_view('user_by_id'))
+app.add_url_rule("/api/comment",view_func=CommentAPI.as_view('comment'))
+app.add_url_rule("/api/comment/<comment_id>", 
+                 view_func=CommentAPI.as_view('comment_by_id'))
 
-#/api
-#   def delete(self,Xid)
-#       try:
-#            blabla
-#       except ValueError as err:
-#           return jsonify(Error=err), 404
-
+#Context Processor:
+@app.context_processor
+def inject_context():
+    users = db.session.query(User).all()
+    categ = db.session.query(Category).all()
+    category1 = db.session.query(Category).first()
+    if category1 == None:
+        category_default = Category(name="Misceláneo")
+        db.session.add(category_default)
+        db.session.commit()
+    return dict(users=users, categories=categ)
 
 #Sección de enrutado con frontend, escencialmente lo mismo que en el miniblog1.
 @app.route("/")
@@ -206,22 +372,6 @@ def Login(uid):
             return redirect(url_for("LoggedIndexView")), access_token
         return redirect(url_for("GuestIndexView")) #o 401"""
 
-#login que pida los datos y des-hashee la pass para ver si coincide con el input
-# if user and check_password_hash(user.password, password) -> Devuelve true o false
-#   access_token = create_access_token(
-#                                       identity=username
-#                                       expires_delta=timedelta(minutes=30)   #datetime.now()+tmdelta                                 
-#                                       additional_claims={
-#                                                   'user_id':uid
-#                                        }                                      
-#                                      )
-#   return access_token
-#return "no se genero token"
-
-    #get_info=get_jwt() -> trae el dict q pones en el token de acceso
-    #if get_info ['user_type']==1:
-    #    return algo admin
-#en el access token hay datos como el nombre de usuario, fecha, etc.
 
 
 @app.route("/add_category", methods=["POST"])
