@@ -5,6 +5,7 @@ WORKDIR /Miniblog2-Flask
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+#expone el puerto del contenedor
 EXPOSE 5040
 
 # Define environment variables
