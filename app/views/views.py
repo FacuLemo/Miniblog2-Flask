@@ -116,7 +116,7 @@ class CategoriesAPI(MethodView):
             db.session.commit()
             return jsonify(CategoryFullSchema().dump(new_category))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
     def put(self,category_id): #Cambiar nombre de categoría
         try:
@@ -127,7 +127,7 @@ class CategoriesAPI(MethodView):
             db.session.commit()
             return jsonify(CategoryFullSchema().dump(categ_put))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
     
     def delete(self,category_id):
         try:
@@ -136,7 +136,7 @@ class CategoriesAPI(MethodView):
             db.session.commit()
             return jsonify(mensaje=f"Borraste la categoría '{categ.name}', y todos los posts asociados a éste.")
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
 app.add_url_rule("/api/category", view_func=CategoriesAPI.as_view('category'))
 app.add_url_rule("/api/category/<category_id>",

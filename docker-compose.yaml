@@ -1,0 +1,35 @@
+version: "3.8"
+#Lista de servicios
+services:
+  mysql_db:
+    image: mysql:5.7  # Use the official MySQL 5.7 image from Docker Hub
+    env_file:
+        - .env
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}  # Create a database named 'mydatabase'
+      MYSQL_USER: ${MYSQL_USER}  # Create a MySQL user 'myuser'
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}  # Set the password for 'myuser'
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Set the root password for MySQL
+    ports:
+      - "3308:3306"  # Map host port 3308 to container port 3306 for MySQL
+    command: --init-file /docker-entrypoint-initdb.d/create_schema.sql
+    restart: always  # Restarts the MySQL container if it stops or crashes
+    container_name: ${MYSQL_CONTAINER_NAME}
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d/
+
+  flask_app: #servicios app
+    build:   #lista de params.
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "5040:5041" # puerto que expone el contenedor : puerto del host donde escuchamos.
+    # restart: always # En caso de error, reintenta.
+    volumes:
+      - .:/Miniblog2-Flask
+    env_file:
+      - .env
+    depends_on:
+      - mysql_db
+    container_name: flask_app_blog
+
