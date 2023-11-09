@@ -17,11 +17,13 @@ from app.models.models import (
 )
 from app.schemas.schemas import (
     UserBasicSchema,
-    UserFullSchema,
+    UserFullNestedSchema,
     CategoryFullSchema,
     CategoryNestedSchema,
     PostFullSchema,
     PostNestedSchema,
+    CommentFullSchema,
+    CommentNestedSchema,
 )
 #Funciones de uso común:
 def get_logged_user(uid):
@@ -41,11 +43,11 @@ class UserAPI(MethodView):
             resultado = UserBasicSchema().dump(users,many=True)
         else:   #Si se le manda el id del user muestra toda la info.
             users= User.query.get(user_id)
-            resultado= UserFullSchema().dump(users)
+            resultado= UserFullNestedSchema().dump(users)
         return jsonify(resultado)
         
     def post(self):
-        user_json = UserFullSchema().load(request.json)
+        user_json = UserFullNestedSchema().load(request.json)
         name= user_json.get('name')
         email= user_json.get('email')
         password= user_json.get('password')
@@ -59,14 +61,14 @@ class UserAPI(MethodView):
                             )
             db.session.add(new_user)
             db.session.commit()
-            return jsonify(UserFullSchema().dump(new_user))
+            return jsonify(UserFullNestedSchema().dump(new_user))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
     def put(self,user_id): #Cambiar contraseña y foto
         try:
             user_put= User.query.get(user_id)
-            user_json = UserFullSchema().load(request.json)
+            user_json = UserFullNestedSchema().load(request.json)
             passw= user_json.get('password')
             new_image= user_json.get('image')
             if int(new_image) > 6: #Esto debería ser una variable global...
@@ -78,7 +80,7 @@ class UserAPI(MethodView):
             db.session.commit()
             return jsonify(UserBasicSchema().dump(user_put))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
     
     def delete(self,user_id):
         try:
@@ -87,11 +89,11 @@ class UserAPI(MethodView):
             db.session.commit()
             return jsonify(mensaje=f"Borraste el user {usr.name}")
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
 app.add_url_rule("/api/user",view_func=UserAPI.as_view('user'))
 app.add_url_rule("/api/user/<user_id>", 
-                 view_func=UserAPI.as_view('user_by_id'))
+                view_func=UserAPI.as_view('user_by_id'))
 
 #Categories API
 class CategoriesAPI(MethodView):
@@ -135,11 +137,10 @@ class CategoriesAPI(MethodView):
             return jsonify(mensaje=f"Borraste la categoría '{categ.name}', y todos los posts asociados a éste.")
         except ValueError as err:
            return jsonify(Error=err), 404
-        
 
 app.add_url_rule("/api/category", view_func=CategoriesAPI.as_view('category'))
 app.add_url_rule("/api/category/<category_id>",
-                  view_func=CategoriesAPI.as_view('category_by_id'))
+                view_func=CategoriesAPI.as_view('category_by_id'))
 
 
 #Post API
@@ -168,7 +169,7 @@ class PostAPI(MethodView):
             db.session.commit()
             return jsonify(PostFullSchema().dump(new_post))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
     def put(self,post_id): #Cambiar contenido y título
         try:
@@ -182,7 +183,7 @@ class PostAPI(MethodView):
             db.session.commit()
             return jsonify(PostFullSchema().dump(post_put))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
     
     def delete(self,post_id):
         try:
@@ -192,71 +193,62 @@ class PostAPI(MethodView):
             db.session.commit()
             return jsonify(mensaje=f"Borraste el post '{post.title}', junto a todos sus comentarios")
         except ValueError as err:
-           return jsonify(Error=err), 404
-        
+            return jsonify(Error=err), 404
+
 
 app.add_url_rule("/api/post",view_func=PostAPI.as_view('post'))
 app.add_url_rule("/api/post/<post_id>", 
-                 view_func=PostAPI.as_view('post_by_id'))
+                view_func=PostAPI.as_view('post_by_id'))
 
-#Comment API #TODO
 class CommentAPI(MethodView):
-    def get(self, post_id=None):
-        if post_id is None: #Si no hay parametro da vista general.
-            comments= User.query.all()
-            resultado = UserBasicSchema().dump(comments,many=True)
-        else:   #Si se le manda el id del user muestra toda la info.
-            comments= User.query.get(post_id)
-            resultado= UserNestedSchema().dump(comments)
+    def get(self, comment_id=None):
+        if comment_id is None: #Si no hay parametro da vista general.
+            comments= Comment.query.all()
+            resultado = CommentFullSchema().dump(comments,many=True)
+        else:   #Si se le manda el id muestra toda la info nesteada.
+            comments= Comment.query.get(comment_id)
+            resultado= CommentNestedSchema().dump(comments)
         return jsonify(resultado)
         
     def post(self):
-        user_json = UserFullSchema().load(request.json)
-        name= user_json.get('name')
-        email= user_json.get('email')
-        password= user_json.get('password')
-        image= user_json.get('image')
+        comment_json = CommentFullSchema().load(request.json)
+        content= comment_json.get('content')
+        time_created= comment_json.get('time_created')
+        user_id= comment_json.get('user_id')
+        post_id= comment_json.get('post_id')
         try:
-            if int(image) > 6: #Esto debería ser una variable global...
-                return jsonify(Error="imagen inexistente. No se registró el user.")
-            new_user = User(name=name, email=email,
-                            password=password, image=image
-                            )
-            db.session.add(new_user)
+            new_comment = User(content=content,time_created=time_created,
+                            user_id=user_id,post_id=post_id)
+            db.session.add(new_comment)
             db.session.commit()
-            return jsonify(UserFullSchema().dump(new_user))
+            return jsonify(CommentFullSchema().dump(new_comment))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
 
-    def put(self,post_id): #Cambiar contraseña y foto
+    def put(self,comment_id): #Editar comment
         try:
-            user_put= User.query.get(post_id)
-            user_json = UserFullSchema().load(request.json)
-            passw= user_json.get('password')
-            new_image= user_json.get('image')
-            if int(new_image) > 6: #Esto debería ser una variable global...
-                return jsonify(Error="Cargando imagen inexistente")
-            user_put.password= passw
-            user_put.image=new_image
-            
+            comment_put = CommentFullSchema().load(request.json)
+            content= comment_put.get('content')
+            time_updated= comment_put.get('time_updated')
+            comment_put.content= content
+            comment_put.time_updated=time_updated
             db.session.commit()
-            return jsonify(UserBasicSchema().dump(user_put))
+            return jsonify(UserBasicSchema().dump(comment_put))
         except ValueError as err:
-           return jsonify(Error=err), 404
+            return jsonify(Error=err), 404
     
-    def delete(self,post_id):
+    def delete(self,comment_id):
         try:
-            usr = User.query.get(post_id)
-            db.session.delete(usr)
+            comment = Comment.query.get(comment_id)
+            db.session.delete(comment)
             db.session.commit()
-            return jsonify(mensaje=f"Borraste el user {id}")
+            return jsonify(mensaje=f"Borraste el comentario '{comment.content}'")
         except ValueError as err:
-           return jsonify(Error=err), 404
-#TODO^^^^^     
+            return jsonify(Error=err), 404 
 
 app.add_url_rule("/api/comment",view_func=CommentAPI.as_view('comment'))
 app.add_url_rule("/api/comment/<comment_id>", 
-                 view_func=CommentAPI.as_view('comment_by_id'))
+                view_func=CommentAPI.as_view('comment_by_id'))
 
 #Context Processor:
 @app.context_processor

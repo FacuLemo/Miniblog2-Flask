@@ -12,18 +12,7 @@ from marshmallow import fields
 #   Full & Nested schema.
 
 
-#Basic & Full schemas:
-#User
-class UserBasicSchema(ma.Schema):
-    id = fields.Integer(dump_only=True)
-    name = fields.String()
-    def get_name(self,obj):
-        return obj.name
-    
-class UserFullSchema(UserBasicSchema):
-    image= fields.Integer()
-    password = fields.String()
-    email=fields.String()
+
 
 #Comment
 class CommentFullSchema(ma.Schema):
@@ -48,19 +37,28 @@ class CategoryFullSchema(ma.Schema):
     id= fields.Integer(dump_only=True)
     name = fields.String()
 
-#Nested Schemas:
+#Basic & FullNested schemas:
+#User
+class UserBasicSchema(ma.Schema):
+    id = fields.Integer(dump_only=True)
+    name = fields.String()
+    
+class UserFullNestedSchema(UserBasicSchema):
+    image= fields.Integer()
+    password = fields.String()
+    email=fields.String()
 
 #comment
 class CommentNestedSchema(CommentFullSchema):
-    post_obj = fields.Nested(PostFullSchema,exclude=('id',))
+    post = fields.Nested(PostFullSchema,exclude=('id',))
     user_obj = fields.Nested(UserBasicSchema,exclude=('id',))
 
 #Post
 class PostNestedSchema(PostFullSchema):
     user_obj= fields.Nested(UserBasicSchema, exclude=('id',))
-    comments_obj = fields.Nested(CommentFullSchema,exclude=('id','post_id'))
+    comment = fields.Nested(CommentFullSchema,exclude=('id',))
 
 #Category
 class CategoryNestedSchema(CategoryFullSchema):
-    posts_obj = fields.Nested(PostFullSchema, exclude=('content',))
+    posts = fields.Nested(PostFullSchema, exclude=('content',))
 
