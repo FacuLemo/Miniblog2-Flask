@@ -1,5 +1,4 @@
-# Miniblog2-Flask
-Lemo Miniblog en Flask
+Lemo Miniblog 2 en Flask
 ======================
 Un miniblog/clon de twitter realizado con Flask y SQLAlchemy, que cuenta con una implementación de una API para consultar información sobre los usuarios, posteos, comentarios y categorías.
 
