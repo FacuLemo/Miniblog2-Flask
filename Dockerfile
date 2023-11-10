@@ -12,5 +12,4 @@ EXPOSE 5040
 ENV FLASK_APP=app/__init__.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
-#ENTRYPOINT [ "python3" ]
 CMD ["sh", "run.sh"]
