@@ -1,64 +1,75 @@
 from app import ma
 from marshmallow import fields
 
-#General view of schemas:
-#User:
-#   Basic & Full schema
-#Comment:
+# General view of schemas:
+# User:
+#   Basic & FullNested schema
+# Comment:
 #   Full  & Nested schema
-#Post:
+# Post:
 #   Full & Nested schema
-#Category:
+# Category:
 #   Full & Nested schema.
 
 
-
-
-#Comment
+# Comment
 class CommentFullSchema(ma.Schema):
-    id= fields.Integer(dump_only=True)
+    id = fields.Integer(dump_only=True)
     content = fields.String()
     post_id = fields.String()
     user_id = fields.String()
     time_created = fields.DateTime()
     time_updated = fields.DateTime()
 
-#Post
+
+# Post
 class PostFullSchema(ma.Schema):
     id = fields.Integer(dump_only=True)
     title = fields.String()
     content = fields.String()
     user_id = fields.Integer()
+    category_id = fields.Integer()
     time_created = fields.DateTime()
     time_updated = fields.DateTime()
 
-#Category
+
+# Category
 class CategoryFullSchema(ma.Schema):
-    id= fields.Integer(dump_only=True)
+    id = fields.Integer(dump_only=True)
     name = fields.String()
 
-#Basic & FullNested schemas:
-#User
+
+# User
 class UserBasicSchema(ma.Schema):
     id = fields.Integer(dump_only=True)
     name = fields.String()
-    
+
+
+# Nested & FullNested schemas:
+
+
 class UserFullNestedSchema(UserBasicSchema):
-    image= fields.Integer()
+    image = fields.Integer()
     password = fields.String()
-    email=fields.String()
+    email = fields.String()
+    posts = fields.Nested(PostFullSchema, many=True)
+    comments = fields.Nested(CommentFullSchema, many=True)
 
-#comment
+
+# comment
 class CommentNestedSchema(CommentFullSchema):
-    post = fields.Nested(PostFullSchema,exclude=('id',))
-    user_obj = fields.Nested(UserBasicSchema,exclude=('id',))
+    post = fields.Nested(PostFullSchema, exclude=("id",))
+    user = fields.Nested(UserBasicSchema, exclude=("id",))
 
-#Post
+
+# Post
 class PostNestedSchema(PostFullSchema):
-    user_obj= fields.Nested(UserBasicSchema, exclude=('id',))
-    comment = fields.Nested(CommentFullSchema,exclude=('id',))
+    user = fields.Nested(UserBasicSchema, exclude=("id",))
+    category = fields.Nested(CategoryFullSchema, exclude=("id",))
+    comments = fields.Nested(CommentFullSchema, many=True)
 
-#Category
+
+# Category
 class CategoryNestedSchema(CategoryFullSchema):
-    posts = fields.Nested(PostFullSchema, exclude=('content',))
+    posts = fields.Nested(PostFullSchema, many=True)
 
