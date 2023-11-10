@@ -2,7 +2,6 @@ from app import db
 from sqlalchemy import ForeignKey, DateTime
 from sqlalchemy.sql import func
 
-
 class Category(db.Model):
     __tablename__ = "category"
     id = db.Column(db.Integer, primary_key=True)
@@ -44,8 +43,8 @@ class Post(db.Model):
                             nullable=True
                             )
     comments = db.relationship("Comment", backref="post",
-                                cascade="all,delete"
-                                )
+                               cascade="all,delete"
+                               )
 
     def __str__(self):
         return f"-Category: f{self.name}"
@@ -61,7 +60,6 @@ class Comment(db.Model):
     time_updated = db.Column(DateTime(timezone=True), onupdate=func.now())
     user_id = db.Column(db.Integer, ForeignKey("user.id"), nullable=False)
     post_id = db.Column(db.Integer, ForeignKey("post.id"), nullable=False)
-    posts = db.relationship("Post", backref="comment")
-    
+
     def __str__(self):
         return f"-Comment '{self.content}' by {self.user_id}"
