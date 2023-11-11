@@ -25,6 +25,14 @@ Si el método de consulta requiere un metodo adicional, debe ser añadido. Por e
 
 ## Capturas de la API
 
+((Aparentemente, las imágenes no cargan correctamente. Hasta que lo solucione, se pueden ver las imágenes acá:)) 
+
+https://ibb.co/ZcBKrjB | 
+https://ibb.co/Lgmmqbr | 
+https://ibb.co/fCn8Mz4 | 
+https://ibb.co/GdbvZKG | 
+https://ibb.co/PxLzfnX | 
+
 <img src="https://i.ibb.co/9nD3CLK/get-post-muchos.png" alt="miniblog2-all-posts" border="0">
 
 ----
@@ -37,7 +45,7 @@ Si el método de consulta requiere un metodo adicional, debe ser añadido. Por e
 
 ----
 
-<img src="https://i.ibb.co/z2ppLjF/post-error.png" alt="miniblog2-user-add-error" border="0">
+<img src="https://i.ibb.co/7rnVDfn/delete-post.png" alt="miniblog2-user-add-error" border="0">
 
 ----
 
